@@ -3,6 +3,14 @@
 import json
 from PIL import Image, ImageFilter
 
+__autor__          = 'Valerii Chernov'
+__python_version__ = '2.7.10'
+__pil_version__    = '4.3.0'
+
+debugModeOn = True
+
+makeSampleConf = False
+
 # ROS
 import rospy
 import rospkg
@@ -11,25 +19,23 @@ from kuka_cv.srv import *
 from kuka_cv.msg import *
 import time
 
-__autor__ = 'Valerii Chernov'
-
-debugModeOn = True
-
-makeSampleConf = False
-
-""" Some general stuff goes here """
-
 rospack = rospkg.RosPack()
 packagePath = rospack.get_path('Picture-PreProcessing') + "/"
 imagePalette = Palette()
+
+start = False;      # Bool variable for starting the work of node
+
+""" Some general stuff goes here """
+
+brushSize = 1
 
 colors = []
 canvas = []
 size = []
 dictToParse = {}
-start = False;      # Bool variable for starting the work of node
 
-corner = 5; # outside corner constant (https://stackoverflow.com/questions/42278777/image-index-out-of-range-pil)
+fond = (255, 255, 255)
+
 
 def myRange(start, end, step):
     while start <= end:
@@ -124,57 +130,72 @@ def choseColor(r, g, b, colors):
     for i in range( len(colors) ): # calculating distances in color space from the point (r, g, b) to a points from color palette
         marker += [(r - colors[i][0]) ** 2 + (g - colors[i][1]) ** 2 + (b - colors[i][2]) ** 2]
 
-    print(marker);
+    # print(marker);
     id = marker.index(min(marker), 0, len(marker)) # choose ID of the most simular color from our palette
 
     return id
 
-def compose(d,l,canvas):
-    alpha, beta = float (d/l), round(canvas[0] / canvas[1], 3)
+def compose(d,l,canvas, brushSize):
+    alpha, beta = d * brushSize / canvas[0], l * brushSize / canvas[1]
 
-    print(alpha, beta)
+    print("Alpha: " + str(alpha))
+    print("Beta:  " + str(beta))
+    print("l: " + str(l))
+    print("d: " + str(d))
 
-    print("Canvas size: " + str([l, d]))
-    if (alpha == beta):
-        return 1
-    elif(alpha < beta):
-        return round(l/canvas[1])
+    if ((alpha < 1) or (beta < 1)):
+        return [0, 0]
+    elif (alpha > beta):
+        px = canvas[0] / brushSize
+        return [int(px), int(float(l)/d * px)]
     else:
-        return round(d/canvas[0])
+        px = canvas[1] / brushSize
+        return [int(float(d)/l * px), int(px)]
 
-def pixelatingPicture(img, pixelSize):
-    # print("Size: " + str([img.size[0], img.size[1]]))
-    img = img.resize((int(round(img.size[0] / pixelSize)), int(round(img.size[1] / pixelSize))), Image.NEAREST)
-    img = img.resize((img.size[0] * pixelSize, img.size[1] * pixelSize), Image.NEAREST)
+def pixelatingPicture(img, Size):
+    if (debugModeOn):
+        print("Size A: " + str([img.size[0], img.size[1]]))
+        print("Size B: " + str(Size))
 
-    return img
+    return img.resize(Size, Image.BILINEAR)
 
-def exportData(step, w, h, pixels, colors, canvas):
+def exportData(w, h, pixels, colors, canvas, picture, brushSize):
+    print("brushSize in export(): ", brushSize)
+
     dictToParse = {}
 
     dictToParse['test'] = 'is done'
     dictToParse['paintingPoints'] = []
 
     for i in range(len(colors)):
-        for x in myRange(0, w - corner, step):
-            for y in range(0, h - corner, step):
-                # Create message with position of pixel center and BGR colour
-                colourMsg = Colour()
-                colourMsg.position = [round((2*x + step)/2 * canvas[0]/w, 3), round((2*y + step)/2 * canvas[0]/w, 3), 0]
-                colourMsg.bgr = [pixels[x, y][2], pixels[x, y][1], pixels[x, y][0]]
-                imagePalette.colours.append(colourMsg)
+        for x in range(picture.size[0]):
+            for y in range(picture.size[1]):
+                if (pixels[x, y] != fond):
+                    x_raw = (2*x  - 1) * brushSize/2  # convertation to pixels
+                    y_raw = (2*y  - 1) * brushSize/2  # convertation to pixels
 
-                dictToParse['paintingPoints'].append({
-                                                            'x': round((2*x + step)/2 * canvas[0]/w, 3), # convertation to m
-                                                            'y': round((2*y + step)/2 * canvas[0]/w, 3), # convertation to m
-                                                            'R': pixels[x, y][0],
-                                                            'G': pixels[x, y][1],
-                                                            'B': pixels[x, y][2]
-                                                     })
+                    x_new = -round(x_raw - canvas[0]/2, 3)  # transform coordinates
+                    y_new = -round(y_raw - canvas[1]/2, 3)  # transform coordinates
+
+                    dictToParse['paintingPoints'].append({
+                                                                'x': x_new,
+                                                                'y': y_new,
+                                                                'R': pixels[x, y][0],
+                                                                'G': pixels[x, y][1],
+                                                                'B': pixels[x, y][2]
+
+                                                         })
+
+                    # Create message with position of pixel center and BGR colour
+                    colourMsg = Colour()
+                    colourMsg.position = [x_new, y_new, 0]
+                    colourMsg.bgr = [pixels[x, y][2], pixels[x, y][1], pixels[x, y][0]]
+                    imagePalette.colours.append(colourMsg)
 
     if (debugModeOn):
         # print(dictToParse) #debug stuff
         print(imagePalette)
+        # pass
 
     json.dump(dictToParse, open(packagePath + 'out.json', 'w')) # json dump
 
@@ -229,36 +250,44 @@ def main(colors, canvas):
 
     """ Load environment data """
     brushSize, file = load_sample_conf()
+    brushSize = 0.01;
 
     """ Load picture to be drawed """
     picture = Image.open(file)
     picSize = picture.size
-    pixels = picture.load()
 
     if (debugModeOn):
         picture.show() #debug stuff
-        print()
 
     """ Pixelating """
-    pixelSize = compose(picture.size[0]*brushSize, picture.size[1]*brushSize, canvas) # compose() function checks if
-                                                                                      # picture needs to be resized
+    pixelSize = compose(picSize[0], picSize[1], canvas, brushSize) # compose() function checks if
+                                                                            # picture needs to be resized
+    print(pixelSize)
 
-    if (pixelSize != 0):
-        picture = pixelatingPicture(picture, int(pixelSize))
+    if (pixelSize != [0, 0]):
+        picture = pixelatingPicture(picture, pixelSize)
+        picSize = picture.size
 
     if (debugModeOn):
         picture.show() #debug stuff
+        print("Pixelated")
 
     """ Change colors of picture  """
+    pixels = picture.load()
 
-    for x in range(picture.size[0] - corner):
-        for y in range(picture.size[1] - corner):
-            i = choseColor(pixels[x, y][0], pixels[x, y][1], pixels[x, y][2], colors)
-            pixels[x, y] = (colors[i][0], colors[i][1], colors[i][2])
+    for x in range(picture.size[0]):
+        for y in range(picture.size[1]):
+            if (pixels[x, y] != fond):
+                i = choseColor(pixels[x, y][0], pixels[x, y][1], pixels[x, y][2], colors)
+                pixels[x, y] = (colors[i][0], colors[i][1], colors[i][2])
 
+    if (debugModeOn):
+        picture.show() #debug stuff
+        print("Colors has changed!")
+        print("brushSize in main: ", brushSize)
     """ Export JSON file """
 
-    exportData(int(pixelSize), picture.size[0], picture.size[1], pixels, colors, canvas)
+    exportData(picSize[0], picSize[1], pixels, colors, canvas, picture, brushSize)
 
 if __name__ == '__main__':
     rospy.init_node('image_preprocessor')
