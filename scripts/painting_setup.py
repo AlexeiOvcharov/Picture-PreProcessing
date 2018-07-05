@@ -21,7 +21,7 @@ import time
 
 rospack = rospkg.RosPack()
 packagePath = rospack.get_path('Picture-PreProcessing') + "/"
-imagePalette = Palette()
+imagePalette = RequestPaletteResponse()
 
 start = False;      # Bool variable for starting the work of node
 
@@ -96,7 +96,7 @@ def create_sample_conf():
                                 ],
                             'height': 4,
                             'width': 2,
-                            'brush': 0.02
+                            'brush': 0.05
                         }
 
     json.dump(color_palette, open(packagePath + 'sample_conf.json', 'w')) # save .json file
@@ -187,14 +187,14 @@ def exportData(w, h, pixels, colors, canvas, picture, brushSize):
                                                          })
 
                     # Create message with position of pixel center and BGR colour
-                    colourMsg = Colour()
-                    colourMsg.position = [x_new, y_new, 0]
-                    colourMsg.bgr = [pixels[x, y][2], pixels[x, y][1], pixels[x, y][0]]
-                    imagePalette.colours.append(colourMsg)
+                    colorMsg = Color(pixels[x, y][0], pixels[x, y][1], pixels[x, y][2])
+                    poseMsg = Pose(x_new, y_new, 0, 0, 0, 0)
+                    imagePalette.colors.append(colorMsg)
+                    imagePalette.poses.append(poseMsg)
 
-    if (debugModeOn):
+    # if (debugModeOn):
         # print(dictToParse) #debug stuff
-        print(imagePalette)
+        # print(imagePalette)
         # pass
 
     json.dump(dictToParse, open(packagePath + 'out.json', 'w')) # json dump
@@ -210,17 +210,20 @@ def startPreprocessing(data):
     print("READ palette and canvas message")
     colors = []
     canvas = []
-    try:
-        # Get information about colours
-        clrResp = paletteClient()
-        for clr in clrResp.colours:
-            colors += [[ int(clr.bgr[2]), int(clr.bgr[1]), int(clr.bgr[0]) ]]
+    readMode = 1;
+    while not rospy.is_shutdown():
+        try:
+            # Get information about colours
+            clrResp = paletteClient(readMode)
+            for clr in clrResp.colors:
+                colors += [[ int(clr.r), int(clr.g), int(clr.b) ]]
 
-        # Get information about canvas dimensions
-        cnvsResp = canvasCient()
-        canvas = [cnvsResp.width, cnvsResp.height]
-    except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
+            # Get information about canvas dimensions
+            cnvsResp = canvasCient(readMode)
+            canvas = [cnvsResp.width, cnvsResp.height]
+            break;
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
 
     print("Palette COLORS: " + str(colors))
     print("Canvas DIM: " + str(canvas))
@@ -234,15 +237,13 @@ def startPreprocessing(data):
     return resp
 
 def sendImagePalette(data):
-    while (len(imagePalette.colours) == 0 and not rospy.is_shutdown()):
+    while (len(imagePalette.colors) == 0 and not rospy.is_shutdown()):
         time.sleep(1)
 
     if rospy.is_shutdown():
         return False
 
-    resp = RequestPaletteResponse()
-    resp.colours = imagePalette.colours
-    return resp
+    return imagePalette
 
 def main(colors, canvas):
     if (makeSampleConf):
@@ -250,7 +251,7 @@ def main(colors, canvas):
 
     """ Load environment data """
     brushSize, file = load_sample_conf()
-    brushSize = 0.01;
+    brushSize = 0.05;
 
     """ Load picture to be drawed """
     picture = Image.open(file)
