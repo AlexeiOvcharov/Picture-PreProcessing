@@ -3,10 +3,6 @@
 import json
 from PIL import Image, ImageFilter
 
-__autor__          = 'Valerii Chernov'
-__python_version__ = '2.7.10'
-__pil_version__    = '4.3.0'
-
 debugModeOn = True
 
 makeSampleConf = False
@@ -27,7 +23,7 @@ start = False;      # Bool variable for starting the work of node
 
 """ Some general stuff goes here """
 
-brushSize = 1
+brushSize = 0.01
 
 colors = []
 canvas = []
@@ -46,7 +42,7 @@ def create_sample_conf():
     color_palette = {
                             "description": 42,
                             "version": 0.1,
-                            "file": 'jake.jpg',
+                            "file": 'dao.jpg',
                             "colors": [
                                     {
                                         "color": "red",
@@ -251,7 +247,7 @@ def main(colors, canvas):
 
     """ Load environment data """
     brushSize, file = load_sample_conf()
-    brushSize = 0.05;
+    brushSize = 0.01;
 
     """ Load picture to be drawed """
     picture = Image.open(file)
