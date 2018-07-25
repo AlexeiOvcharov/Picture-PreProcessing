@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>Picture-PreProcessing</name>
+  <name>picture_preprocessing</name>
   <version>0.0.0</version>
   <description>The Picture-PreProcessing package</description>
 
@@ -16,6 +16,9 @@
 
   <build_depend>roslib</build_depend>
   <run_depend>roslib</run_depend>
+
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
 
   <export>
 

@@ -16,7 +16,7 @@ from kuka_cv.msg import *
 import time
 
 rospack = rospkg.RosPack()
-packagePath = rospack.get_path('Picture-PreProcessing') + "/"
+packagePath = rospack.get_path('picture_preprocessing') + "/"
 imagePalette = RequestPaletteResponse()
 
 start = False;      # Bool variable for starting the work of node
