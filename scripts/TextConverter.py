@@ -11,7 +11,8 @@ import os
 import rospy
 import rospkg
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Pose, PoseArray
+import geometry_msgs.msg as gmsgs
 from std_srvs.srv import Empty, EmptyResponse
 from kuka_cv.srv import *
 from kuka_cv.msg import *
@@ -141,7 +142,7 @@ def convertText(data):
         size = len(subcontours)
         try:
             for num in xrange(size):
-                trajectory = Path()
+                trajectory = gmsgs.PoseArray()
 
                 # simple filter
                 if (subcontours[num].shape[0] <= 4):
@@ -156,15 +157,15 @@ def convertText(data):
                 # plt.plot(x, y)
                 # Fill trajectory message
                 for p in xrange(x.shape[0]):
-                    pose = PoseStamped()
-                    pose.pose.position.x = x[p]
-                    pose.pose.position.y = y[p]
+                    pose = gmsgs.Pose()
+                    pose.position.x = x[p]
+                    pose.position.y = y[p]
 
                     trajectory.poses.append(pose)
                 trajectorysNum += 1
                 bag.write('/path', trajectory)
-        except:
-            print("Some error when write to bag file")
+        except Exception, e:
+            print("Error: {}".format(e))
 
     bag.close()
     rospy.loginfo("Trajectory generated: {}".format(trajectorysNum))
