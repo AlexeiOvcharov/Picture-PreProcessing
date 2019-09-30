@@ -24,9 +24,9 @@ tresholdMin = 200 #min for Canny
 tresholdMax = 255 #max for Canny
 binMin = 70 #min for Threshold in %
 binMax = 100 #max for Threshold in %
-PAPER_WIDTH = 0.27 # in meters
-PAPER_HEIGHT = 0.13 # in meters
-BRUSH_SIZE = 0.006 # in meters
+PAPER_WIDTH = 0.297 # in meters
+PAPER_HEIGHT = 0.210 # in meters
+BRUSH_SIZE = 0.005 # in meters
 
 # Settings of path separator
 eps = 0.04;
@@ -84,15 +84,15 @@ def separatePaths(paths):
 
 def convertText(data):
 
-	while not rospy.is_shutdown():
-		try:
-			# Get information about canvas dimensions
-			cnvsResp = canvasCient(1)
-			PAPER_WIDTH = cnvsResp.width
-			PAPER_HEIGHT = cnvsResp.height
-			break;
-		except rospy.ServiceException, e:
-			print "Service call failed: {}".fromat(e)
+	# while not rospy.is_shutdown():
+	# 	try:
+	# 		# Get information about canvas dimensions
+	# 		cnvsResp = canvasCient(1)
+	# 		PAPER_WIDTH = cnvsResp.width
+	# 		PAPER_HEIGHT = cnvsResp.height
+	# 		break;
+	# 	except rospy.ServiceException, e:
+	# 		print "Service call failed: {}".fromat(e)
 
 	rospy.loginfo("Canvas dimensions: {0}x{1} m".format(PAPER_WIDTH, PAPER_HEIGHT))
 	imageFile = packagePath + "images/techstarslogo.jpg";
@@ -112,9 +112,9 @@ def convertText(data):
 
 	heigh, width = binImage.shape
 	ec = EdgeCutter([width, heigh],[PAPER_WIDTH, PAPER_HEIGHT], BRUSH_SIZE, 10) #Init edge cutter(image size, paper size, brush size, scale factor)
-	cp = ContourProcessing([width, heigh],[PAPER_WIDTH, PAPER_HEIGHT], 0, [0, 0]); #Init contour processing(image size, paper size, rotation, bias)
 	resizedImage = ec.normalizeImage(binImage); #Rescale image for good cutting
-
+	heigh, width = resizedImage.shape
+	cp = ContourProcessing([width, heigh],[PAPER_WIDTH, PAPER_HEIGHT], 0, [0, 0]); #Init contour processing(image size, paper size, rotation, bias)
 	# cv2.imshow('Cutting image', resizedImage)
 	# cv2.waitKey(0)
 	avg_colors = ec.getAvgColor(resizedImage) #Check avg color in picture for finish cutting
@@ -132,24 +132,24 @@ def convertText(data):
 
 		# cv2.imshow('Cutting image', resizedImage)
 		# showPahts(paths)
-		separatedPaths = separatePaths(paths)
-		showPahts(separatedPaths)
+		# separatedPaths = separatePaths(paths)
+		showPahts(paths)
 
-		try:
-			for path in separatedPaths:
-				trajectory = gmsgs.PoseArray()
-
-				for p in path:
-					pose = gmsgs.Pose()
-					pose.position.x = p[0]
-					pose.position.y = p[1]
-
-					trajectory.poses.append(pose)
-
-				trajectorysNum += 1
-				bag.write('/path', trajectory)
-		except Exception, e:
-			print("Error: {}".format(e))
+		# try:
+		# 	for path in separatedPaths:
+		# 		trajectory = gmsgs.PoseArray()
+		#
+		# 		for p in path:
+		# 			pose = gmsgs.Pose()
+		# 			pose.position.x = p[0]
+		# 			pose.position.y = p[1]
+		#
+		# 			trajectory.poses.append(pose)
+		#
+		# 		trajectorysNum += 1
+		# 		bag.write('/path', trajectory)
+		# except Exception, e:
+		# 	print("Error: {}".format(e))
 
 	bag.close()
 	rospy.loginfo("Trajectory generated: {}".format(trajectorysNum))
