@@ -15,7 +15,7 @@ class EdgeCutter:
         scaleTransform = np.diag([self.__imageSize[0],self.__imageSize[1]])*np.linalg.inv(np.diag(self.__areaSize))
         vec2dStep = scaleTransform * np.matrix([[self.__step], [self.__step]])
         pixel_step = int(np.linalg.norm(vec2dStep))
-        self.__corImageScale = self.__scaleFactor/pixel_step
+        self.__corImageScale = self.__scaleFactor/(1.0*pixel_step)
 
     def getImageScaleNorm(self):
         return self.__corImageScale
@@ -37,7 +37,8 @@ class EdgeCutter:
 
     def normalizeImage(self, sourceImage):
         self.calcImageScaleNorm()
-        resizedImg = cv2.resize(sourceImage.copy(), (0, 0), fx = self.__corImageScale, fy = self.__corImageScale)
+        print(self.__corImageScale)
+        resizedImg = cv2.resize(sourceImage.copy(), (int(self.__imageSize[0]*self.__corImageScale), int(self.__imageSize[1]*self.__corImageScale)))
         return resizedImg
 
     def getAvgColor(self, sourceImage):

@@ -24,8 +24,8 @@ tresholdMin = 200 #min for Canny
 tresholdMax = 255 #max for Canny
 binMin = 70 #min for Threshold in %
 binMax = 100 #max for Threshold in %
-PAPER_WIDTH = 1.0 # in meters
-PAPER_HEIGHT = 1.0 # in meters
+PAPER_WIDTH = 0.27 # in meters
+PAPER_HEIGHT = 0.13 # in meters
 
 rospack = rospkg.RosPack()
 packagePath = rospack.get_path('picture_preprocessing') + "/"
@@ -64,7 +64,7 @@ def convertText(data):
 	avg_colors = ec.getAvgColor(resizedImage) #Check avg color in picture for finish cutting
 
 	step =0
-	while(avg_colors < 255):
+	while(avg_colors < 254.95):
 		step+=1
 		cont,hier = cf.getContours(resizedImage)
 		resizedImage = ec.cutEdges(resizedImage, cont) #Cutting image edges with step(brush size)
