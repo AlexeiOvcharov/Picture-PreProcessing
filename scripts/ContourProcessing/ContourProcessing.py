@@ -15,15 +15,15 @@ class ContourProcessing:
         print(self.__transformMatrix)
 
     def sort(self, contours, hierarchy):
-        paths = [[]];
-        for j in range(0,len(contours)):
+        paths = [];
+        for j in range(len(contours)):
             path = []
             if cv2.contourArea(contours[j]) < min(self.__imageSize)/100.0:
                 continue
-            for i in range(0,len(contours[j])):
+            for i in range(len(contours[j])):
                 point = contours[j][i][0] - np.array(self.__areaSize)/2
-                point3d = np.matrix(np.append( [np.matrix(point)], [[1]])).T
-                trpoint3d= np.dot(self.__transformMatrix,np.matrix(point3d))
+                point3d = np.matrix(np.append([np.matrix(point)], [[1]])).T
+                trpoint3d= np.dot(self.__transformMatrix, np.matrix(point3d))
                 path.append([trpoint3d.item(0), trpoint3d.item(1)])
-                paths.append(path)
+            paths.append(np.array(path))
         return paths
