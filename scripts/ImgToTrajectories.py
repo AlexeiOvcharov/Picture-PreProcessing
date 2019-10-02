@@ -26,11 +26,11 @@ binMin = 70 #min for Threshold in %
 binMax = 100 #max for Threshold in %
 PAPER_WIDTH = 0.297 # in meters
 PAPER_HEIGHT = 0.210 # in meters
-BRUSH_SIZE = 0.005 # in meters
+BRUSH_SIZE = 0.003 # in meters
 
 # Settings of path separator
-eps = 0.05;
-minDiff = eps/2;
+eps = 0.03
+minDiff = eps/2
 
 rospack = rospkg.RosPack()
 packagePath = rospack.get_path('picture_preprocessing') + "/"
@@ -111,7 +111,7 @@ def convertText(data):
 	binImage = filt.getBinaryImage(src)
 
 	heigh, width = binImage.shape
-	ec = EdgeCutter([width, heigh],[PAPER_WIDTH, PAPER_HEIGHT], BRUSH_SIZE, 30) #Init edge cutter(image size, paper size, brush size, scale factor)
+	ec = EdgeCutter([width, heigh],[PAPER_WIDTH, PAPER_HEIGHT], BRUSH_SIZE, 40) #Init edge cutter(image size, paper size, brush size, scale factor)
 	resizedImage = ec.normalizeImage(binImage); #Rescale image for good cutting
 	heigh, width = resizedImage.shape
 	cp = ContourProcessing([width, heigh],[PAPER_WIDTH, PAPER_HEIGHT], 0, [0, 0]); #Init contour processing(image size, paper size, rotation, bias)
@@ -130,10 +130,10 @@ def convertText(data):
 		paths = cp.sort(cont,hier) #Sort image
 		resizedImage = filt.getBlurBinaryImage(resizedImage, 7)
 
-		# cv2.imshow('Cutting image', resizedImage)
-		# showPahts(paths)
+		cv2.imshow('Cutting image', resizedImage)
+		showPahts(paths)
 		separatedPaths = separatePaths(paths)
-		showPahts(separatedPaths)
+		# showPahts(separatedPaths)
 
 		try:
 			for path in separatedPaths:

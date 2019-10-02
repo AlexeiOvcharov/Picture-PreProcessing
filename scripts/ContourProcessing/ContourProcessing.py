@@ -9,8 +9,8 @@ class ContourProcessing:
         self.__imageSize = __imageSize
         self.__st = max(__areaSize)/max(__imageSize);
         self.__transformMatrix = np.matrix([\
-        [-self.__st*cos(__rotation),-sin(__rotation),__bias[0]],\
-        [+sin(__rotation), -self.__st*cos(__rotation),__bias[1]],\
+        [self.__st*cos(__rotation),self.__st*sin(__rotation),__bias[0]],\
+        [self.__st*sin(__rotation), -self.__st*cos(__rotation),__bias[1]],\
         [0              , 0                        , 1      ]])
         print(self.__transformMatrix)
 
@@ -18,7 +18,7 @@ class ContourProcessing:
         paths = [];
         for j in range(len(contours)):
             path = []
-            if cv2.contourArea(contours[j]) < min(self.__imageSize)/100.0:
+            if cv2.contourArea(contours[j]) < min(self.__imageSize)/1000.0:
                 continue
             for i in range(len(contours[j])):
                 point = contours[j][i][0] - np.array(self.__imageSize)/2
